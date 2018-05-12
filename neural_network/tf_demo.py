@@ -27,32 +27,41 @@ def neural_net(x_dict):
     out_layer = tf.layers.dense(layer_2,num_classes)
     return out_layer
 
-#Define the model function (following TF Estimator Template)
-def model_fn(features,labels,model ):
-    #Build the neural network
+# Define the model function (following TF Estimator Template)
+def model_fn(features, labels, mode):
+    # Build the neural network
     logits = neural_net(features)
-    #Predictions
-    pred_classes = tf.argmax(logits,axis=1)
+
+    # Predictions
+    pred_classes = tf.argmax(logits, axis=1)
     pred_probas = tf.nn.softmax(logits)
 
-    #if prediction model,early return
+    # If prediction mode, early return
     if mode == tf.estimator.ModeKeys.PREDICT:
-        return tf.estimator.EstimatorSpec(mode,predictions=pred_classes)
+        return tf.estimator.EstimatorSpec(mode, predictions=pred_classes)
 
-    #Define loss and optimizer
-    loss_op = tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(logits=logits,labels= tf.cast(labels,dtype=tf.int32)))
+        # Define loss and optimizer
+    loss_op = tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(
+        logits=logits, labels=tf.cast(labels, dtype=tf.int32)))
     optimizer = tf.train.GradientDescentOptimizer(learning_rate=learning_rate)
-    train_op = optimizer.minimize(loss_op,global_step=tf.train.get_global_step())
+    train_op = optimizer.minimize(loss_op,
+                                  global_step=tf.train.get_global_step())
 
-    #Evaluate the accuracy of the model
-    acc_op = tf.metrics.accuracy(labels=labels,predictions=pred_classes)
-    #TF Estimators requires to return a EstimatorSpec, that specify
-    #The different ops for training, evaluating,...
-    estim_specs = tf.estimator.EstimatorSpec(mode=mode,predictions=pred_classes,loss=loss_op,train_op=train_op,eval_metric_ops={'accuracy':acc_op})
+    # Evaluate the accuracy of the model
+    acc_op = tf.metrics.accuracy(labels=labels, predictions=pred_classes)
+
+    # TF Estimators requires to return a EstimatorSpec, that specify
+    # the different ops for training, evaluating, ...
+    estim_specs = tf.estimator.EstimatorSpec(
+        mode=mode,
+        predictions=pred_classes,
+        loss=loss_op,
+        train_op=train_op,
+        eval_metric_ops={'accuracy': acc_op})
+
     return estim_specs
 
-
-#Build the Estimator
+# Build the Estimator
 model = tf.estimator.Estimator(model_fn)
 #Define the input function for training
 input_fn = tf.estimator.inputs.numpy_input_fn(x={'images':mnist.train.images}, y=mnist.train.labels,batch_size=batch_size,num_epochs=None,shuffle=True)
